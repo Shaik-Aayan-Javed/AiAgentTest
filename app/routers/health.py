@@ -62,52 +62,29 @@ async def _ping_coqui() -> ProviderStatus:
         )
 
 
-async def _ping_deepgram() -> ProviderStatus:
-    if not settings.deepgram_api_key:
-        return ProviderStatus(
-            status="down",
-            provider="Deepgram",
-            message="DEEPGRAM_API_KEY not set in .env",
-        )
+async def _check_stt() -> ProviderStatus:
+    """Health of the configured STT provider (Whisper or Deepgram)."""
+    from app.services.stt.factory import create_stt_provider
+
+    provider = create_stt_provider()
     start = time.monotonic()
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(
-                "https://api.deepgram.com/v1/projects",
-                headers={"Authorization": f"Token {settings.deepgram_api_key}"},
-            )
+        ok = await provider.health_check()
         latency = int((time.monotonic() - start) * 1000)
-        if resp.status_code == 200:
-            return ProviderStatus(
-                status="healthy",
-                provider="Deepgram",
-                latency_ms=latency,
-            )
-        if resp.status_code == 401:
-            return ProviderStatus(
-                status="down",
-                provider="Deepgram",
-                latency_ms=latency,
-                message="Invalid API key",
-            )
-        return ProviderStatus(
-            status="degraded",
-            provider="Deepgram",
-            latency_ms=latency,
-            message=f"HTTP {resp.status_code}",
-        )
-    except httpx.TimeoutException:
+        if ok:
+            return ProviderStatus(status="healthy", provider=provider.name, latency_ms=latency)
+        if provider.name.startswith("Whisper"):
+            message = "faster-whisper not installed — pip install -r requirements-stt.txt"
+        else:
+            message = "Deepgram unavailable — check DEEPGRAM_API_KEY"
         return ProviderStatus(
             status="down",
-            provider="Deepgram",
-            message="Connection timed out",
+            provider=provider.name,
+            latency_ms=latency,
+            message=message,
         )
     except Exception as exc:
-        return ProviderStatus(
-            status="down",
-            provider="Deepgram",
-            message=str(exc),
-        )
+        return ProviderStatus(status="down", provider=provider.name, message=str(exc))
 
 
 def _overall_status(tts: ProviderStatus, stt: ProviderStatus) -> str:
@@ -121,7 +98,7 @@ def _overall_status(tts: ProviderStatus, stt: ProviderStatus) -> str:
 
 @router.get("/health", response_model=HealthResponse, summary="Provider health check")
 async def health_check() -> HealthResponse:
-    tts, stt = await asyncio.gather(_ping_coqui(), _ping_deepgram())
+    tts, stt = await asyncio.gather(_ping_coqui(), _check_stt())
     return HealthResponse(
         status=_overall_status(tts, stt),
         environment=settings.environment,

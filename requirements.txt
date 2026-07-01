@@ -16,6 +16,11 @@ sentry-sdk[fastapi]>=2.22.0
 gtts>=2.5.0          # fallback TTS (Coqui XTTS-v2 runs in Docker, called over HTTP)
 
 # ── Added in Phase 3 (STT) ──────────────────────────────
+python-multipart>=0.0.9   # file uploads for POST /api/stt/transcribe
+# Deepgram STT is called via httpx REST — no SDK needed.
+# The self-hosted Whisper engine (faster-whisper) is an OPT-IN install kept in a
+# separate file so it can't break this one on newer Pythons:
+#     pip install -r requirements-stt.txt
 
 # ── Added in Phase 4 (Training) ─────────────────────────
 

@@ -5,7 +5,7 @@ and escalates to you when needed. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE
 for the full design.
 
 > **Status:** In development.
-> Phase 1 (foundation) ✅ · Phase 2 (TTS module) ✅ · Phase 3 (STT module) next.
+> Phase 1 (foundation) ✅ · Phase 2 (TTS) ✅ · Phase 3 (STT + echo loop) ✅ · brain (Claude) next.
 
 ---
 
@@ -96,6 +96,49 @@ Returns `audio_url`, latency, provider, and the preprocessed text.
    `voice_sample` (matches `TTS_DEFAULT_VOICE` in `.env`).
 
 The Voice Studio UI (a later phase) will let you record this in the browser.
+
+---
+
+## Try the STT module (Phase 3)
+
+Speech-to-text. The default engine is **Whisper** (self-hosted, free). Install the
+opt-in engine first:
+
+```bash
+pip install -r requirements-stt.txt
+```
+
+> On Python 3.14 this may fail (ctranslate2 wheels lag new Pythons). If so, either
+> use a Python 3.12 venv, or set `STT_PROVIDER=deepgram` in `.env` and add a free
+> `DEEPGRAM_API_KEY` — the module works identically either way.
+
+Transcribe an audio file (record a quick voice memo and drop it in):
+
+```bash
+python scripts/test_stt.py my_recording.wav
+```
+
+Prints the transcript, confidence, detected language, latency, and the provider.
+
+## Echo test — the full pipeline (STT → TTS)
+
+Proves both modules work together: your recording is transcribed, then spoken back.
+
+```bash
+python scripts/test_loop.py my_recording.wav
+```
+
+```
+[1/2] Transcribing my_recording.wav ...
+  Heard (Whisper (faster-whisper), conf 0.94):
+    'what are your opening hours'
+[2/2] Speaking it back ...
+  Spoken by Coqui XTTS-v2, saved to: app/static/audio/....wav
+Play the echo now? [y/N]
+```
+
+The real assistant will slot Claude between these two steps
+(`audio → STT → text → Claude → reply → TTS → audio`).
 
 ---
 

@@ -1,7 +1,7 @@
 # AI Voice Assistant — Project Documentation
 
 > Last updated: 2026-07-01
-> Status: In development — Phase 1 (foundation) and Phase 2 (TTS module) built
+> Status: In development — Phase 1 (foundation), Phase 2 (TTS), Phase 3 (STT + echo loop) built
 
 ---
 
@@ -628,11 +628,12 @@ AiAgentTest/
 │   │   │   ├── gtts_provider.py   # gTTS (fallback)
 │   │   │   ├── factory.py         # provider selection + fallback chain — SWAP POINT
 │   │   │   └── service.py         # orchestration: preprocess, cache, save
-│   │   ├── stt/                   # ── Phase 3 ──
-│   │   │   ├── base.py            # STTProvider interface
-│   │   │   ├── whisper.py         # faster-whisper (primary, self-hosted)
-│   │   │   ├── deepgram.py        # Deepgram (optional) — SWAP POINT
-│   │   │   └── factory.py         # provider selection
+│   │   ├── stt/                   # ── BUILT (Phase 3) ──
+│   │   │   ├── base.py            # STTProvider interface + TranscriptResult
+│   │   │   ├── whisper_provider.py # faster-whisper (primary, self-hosted)
+│   │   │   ├── deepgram.py        # Deepgram via httpx REST (optional) — SWAP POINT
+│   │   │   ├── factory.py         # provider selection
+│   │   │   └── service.py         # orchestration + latency
 │   │   ├── llm.py                 # Claude Haiku 4.5 — SWAP POINT (Haiku → Sonnet)
 │   │   ├── tier_system.py         # Orchestrates Tier 1 → 2 → 3 response selection
 │   │   ├── faq.py                 # FAQ store CRUD + pgvector semantic search

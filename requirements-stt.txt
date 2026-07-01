@@ -1,0 +1,11 @@
+# Opt-in: self-hosted Whisper STT engine.
+#
+# Kept separate from requirements.txt because faster-whisper depends on
+# ctranslate2, whose prebuilt wheels may lag the newest Python releases. If this
+# fails to install on your Python version, either:
+#   1. use a Python 3.12 venv for the project, or
+#   2. set STT_PROVIDER=deepgram in .env and use Deepgram instead (no local model).
+#
+# Install with:  pip install -r requirements-stt.txt
+
+faster-whisper>=1.0.0

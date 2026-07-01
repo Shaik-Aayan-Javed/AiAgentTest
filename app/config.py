@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     deepgram_api_key: str = ""
 
+    # STT — Whisper (primary, self-hosted) | Deepgram (optional)
+    stt_provider: str = "whisper"              # "whisper" | "deepgram"
+    stt_language: str = ""                     # "" = auto-detect
+    whisper_model_size: str = "base"           # tiny | base | small | medium | large
+    whisper_device: str = "cpu"                # "cpu" | "cuda"
+    whisper_compute_type: str = "int8"         # int8 (CPU) | float16 (GPU)
+    deepgram_model: str = "nova-2"
+
     # TTS — Coqui XTTS-v2 (Docker)
     coqui_tts_url: str = "http://localhost:8020"
     tts_provider: str = "coqui"                # "coqui" | "gtts"
