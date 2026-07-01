@@ -22,7 +22,10 @@ python-multipart>=0.0.9   # file uploads for POST /api/stt/transcribe
 # separate file so it can't break this one on newer Pythons:
 #     pip install -r requirements-stt.txt
 
-# ── Added in Phase 4 (Training) ─────────────────────────
+# ── Added in Phase 4 (LLM brain) ────────────────────────
+anthropic>=0.40.0    # Claude API (the reasoning brain)
+
+# ── Added in Phase 5 (Training / tiered response) ───────
 
 # ── Testing ─────────────────────────────────────────────
 pytest>=8.0.0

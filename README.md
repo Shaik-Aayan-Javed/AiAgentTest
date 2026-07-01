@@ -5,7 +5,7 @@ and escalates to you when needed. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE
 for the full design.
 
 > **Status:** In development.
-> Phase 1 (foundation) ✅ · Phase 2 (TTS) ✅ · Phase 3 (STT + echo loop) ✅ · brain (Claude) next.
+> Phase 1 (foundation) ✅ · Phase 2 (TTS) ✅ · Phase 3 (STT + echo) ✅ · Phase 4 (brain) ✅ · tiered response next.
 
 ---
 
@@ -139,6 +139,43 @@ Play the echo now? [y/N]
 
 The real assistant will slot Claude between these two steps
 (`audio → STT → text → Claude → reply → TTS → audio`).
+
+---
+
+## Try the brain (Phase 4)
+
+Now it *answers* instead of echoing. Add your Anthropic key to `.env`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Text chat (no audio, no Docker — just the key):**
+
+```bash
+python scripts/test_conversation.py
+# You: what are your opening hours?
+# AI:  We're open Monday to Friday, nine to five. Is there anything else I can help with?
+#      [Claude/claude-haiku-4-5 · 48+21 tok · 610 ms]
+```
+
+**Full voice pipeline (audio → STT → Claude → TTS → playback):**
+
+```bash
+python scripts/test_conversation.py my_recording.mp3
+```
+
+**Or via the API:**
+
+```bash
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "What are your hours?"}]}'
+```
+
+Uses **Claude Haiku 4.5** (fast, low-cost) by default — swap to `claude-sonnet-5`
+via `LLM_MODEL` in `.env` for harder queries. The default persona (in `config.py`)
+is tuned for speech: plain text, one to three short sentences, no markdown.
 
 ---
 

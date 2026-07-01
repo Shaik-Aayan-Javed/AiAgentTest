@@ -22,6 +22,7 @@ class HealthResponse(BaseModel):
     environment: str
     tts: ProviderStatus
     stt: ProviderStatus
+    llm: ProviderStatus
 
 
 async def _ping_coqui() -> ProviderStatus:
@@ -87,8 +88,26 @@ async def _check_stt() -> ProviderStatus:
         return ProviderStatus(status="down", provider=provider.name, message=str(exc))
 
 
-def _overall_status(tts: ProviderStatus, stt: ProviderStatus) -> str:
-    statuses = {tts.status, stt.status}
+async def _check_llm() -> ProviderStatus:
+    """Health of the configured LLM provider (config check only — no live API call)."""
+    from app.services.llm.factory import create_llm_provider
+
+    provider = create_llm_provider()
+    try:
+        ok = await provider.health_check()
+        if ok:
+            return ProviderStatus(status="healthy", provider=provider.name)
+        return ProviderStatus(
+            status="down",
+            provider=provider.name,
+            message="ANTHROPIC_API_KEY not set in .env",
+        )
+    except Exception as exc:
+        return ProviderStatus(status="down", provider=provider.name, message=str(exc))
+
+
+def _overall_status(*providers: ProviderStatus) -> str:
+    statuses = {p.status for p in providers}
     if statuses == {"healthy"}:
         return "healthy"
     if "down" in statuses:
@@ -98,10 +117,11 @@ def _overall_status(tts: ProviderStatus, stt: ProviderStatus) -> str:
 
 @router.get("/health", response_model=HealthResponse, summary="Provider health check")
 async def health_check() -> HealthResponse:
-    tts, stt = await asyncio.gather(_ping_coqui(), _check_stt())
+    tts, stt, llm = await asyncio.gather(_ping_coqui(), _check_stt(), _check_llm())
     return HealthResponse(
-        status=_overall_status(tts, stt),
+        status=_overall_status(tts, stt, llm),
         environment=settings.environment,
         tts=tts,
         stt=stt,
+        llm=llm,
     )
