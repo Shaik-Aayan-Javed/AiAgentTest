@@ -1,0 +1,26 @@
+# Web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Configuration
+pydantic-settings>=2.7.0
+python-dotenv>=1.0.0
+
+# HTTP client (async)
+httpx>=0.27.0
+
+# Error tracking
+sentry-sdk[fastapi]>=2.22.0
+
+# ── Added in Phase 2 (TTS) ──────────────────────────────
+# (dependencies added here as each phase is built)
+
+# ── Added in Phase 3 (STT) ──────────────────────────────
+
+# ── Added in Phase 4 (Training) ─────────────────────────
+
+# ── Testing ─────────────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+pytest-mock>=3.14.0
+httpx>=0.27.0
