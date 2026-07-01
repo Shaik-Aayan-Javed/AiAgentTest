@@ -1,7 +1,24 @@
 # AI Voice Assistant — Project Documentation
 
 > Last updated: 2026-07-01
-> Status: Pre-development (architecture locked, ready to build)
+> Status: In development — Phase 1 (foundation) and Phase 2 (TTS module) built
+
+---
+
+## Architecture Updates
+
+Decisions refined after the initial draft. Where the sections below still name the
+original providers, these supersede them:
+
+| Area | Original | Current | Why |
+|------|----------|---------|-----|
+| **TTS** | Kokoro TTS (generic voice) | **Coqui XTTS-v2** (self-hosted, Docker) | Coqui clones the owner's own voice from a short sample — a core requirement Kokoro can't meet. Still free, still self-hosted, still swappable (gTTS fallback wired in; ElevenLabs for production). |
+| **STT** | Deepgram (paid API) | **Whisper self-hosted (primary) + Deepgram (optional)** | Whisper runs on our own machine at $0 and keeps audio private. Deepgram stays as a config-selectable provider behind the same `STTProvider` interface for when its ~300ms streaming latency is worth paying for. |
+| **LLM** | Groq / Llama (prototype) | **Claude from day one** | Consistency between prototype and production; the tiered system keeps LLM cost negligible. |
+
+The clean split: **STT (Whisper) and TTS (Coqui) are self-hosted and free; only the
+reasoning brain (Claude) is a paid API.** Every provider sits behind an interface
+selected by a factory, so swapping any one is a single config change.
 
 ---
 
@@ -398,9 +415,9 @@ When Tier 3 generates a response, it is cached in Redis keyed by a hash of the n
 | Layer | Technology | Reason |
 |-------|-----------|--------|
 | **Phone / Calls** | Twilio | Only provider with full feature set: conferences, warm transfers, Media Streams WebSocket, SMS, and Voice SDK for future WebRTC. Nothing is ripped out when going to production. |
-| **Speech-to-Text** | Deepgram | Streaming WebSocket API pairs natively with Twilio Media Streams. ~300ms latency. Free $200 credit. Same API in production — no architecture change. |
+| **Speech-to-Text** | Whisper (self-hosted, primary) · Deepgram (optional) | Whisper (faster-whisper) runs on our own server at $0, audio never leaves the machine. Deepgram kept behind the same `STTProvider` interface for its ~300ms streaming latency when needed — one config change to switch. |
 | **LLM** | Claude Haiku 4.5 | Best instruction-following for slot-filling and escalation logic. Consistent behaviour from prototype to production. Only pays for ~20% of calls due to tiered system. |
-| **Text-to-Speech** | Kokoro TTS (self-hosted, Docker) | Free, near-natural voice quality. Runs locally in Docker. Swappable to Cartesia (streaming TTS) for production with one file change. |
+| **Text-to-Speech** | Coqui XTTS-v2 (self-hosted, Docker) · gTTS (fallback) | Clones the owner's voice from a short sample. Free, runs locally in Docker. gTTS is the zero-setup fallback if Coqui is down. Swappable to ElevenLabs/Cartesia for production with one file change. |
 | **Backend Framework** | Python 3.11 + FastAPI | Async by default for concurrent calls. Best AI/voice SDK ecosystem. WebSocket support built-in for Twilio Media Streams. |
 | **Job Queue** | ARQ (async Redis queue) | Lightweight, async, Redis-backed. Handles post-call summary generation without blocking the call handler. Scales to production without switching to Celery. |
 | **Session State** | Redis (Upstash free tier) | In-memory, sub-millisecond reads. Active call sessions, response cache, job queue all share one Redis instance. |
@@ -417,7 +434,8 @@ The following are the ONLY things that change. Everything else is identical.
 | Component | Prototype | Production |
 |-----------|-----------|------------|
 | LLM (complex) | Claude Haiku 4.5 | Claude Sonnet 5 |
-| TTS | Kokoro TTS (Docker) | Cartesia (streaming) |
+| TTS | Coqui XTTS-v2 (Docker) | ElevenLabs / Cartesia (streaming) |
+| STT | Whisper (self-hosted) | Whisper GPU / Deepgram |
 | Database | Supabase free | Supabase Pro / self-hosted |
 | Redis | Upstash free | Upstash Pro / self-hosted |
 | Deployment | Fly.io free | Fly.io paid / AWS |
@@ -604,9 +622,18 @@ AiAgentTest/
 │   │   └── admin.py               # Call history + transcript endpoints
 │   │
 │   ├── services/
-│   │   ├── stt.py                 # Deepgram STT — SWAP POINT (prototype → production)
+│   │   ├── tts/                   # ── BUILT (Phase 2) ──
+│   │   │   ├── base.py            # TTSProvider interface + AudioResult
+│   │   │   ├── coqui.py           # Coqui XTTS-v2 (primary, voice cloning)
+│   │   │   ├── gtts_provider.py   # gTTS (fallback)
+│   │   │   ├── factory.py         # provider selection + fallback chain — SWAP POINT
+│   │   │   └── service.py         # orchestration: preprocess, cache, save
+│   │   ├── stt/                   # ── Phase 3 ──
+│   │   │   ├── base.py            # STTProvider interface
+│   │   │   ├── whisper.py         # faster-whisper (primary, self-hosted)
+│   │   │   ├── deepgram.py        # Deepgram (optional) — SWAP POINT
+│   │   │   └── factory.py         # provider selection
 │   │   ├── llm.py                 # Claude Haiku 4.5 — SWAP POINT (Haiku → Sonnet)
-│   │   ├── tts.py                 # Kokoro TTS — SWAP POINT (Kokoro → Cartesia)
 │   │   ├── tier_system.py         # Orchestrates Tier 1 → 2 → 3 response selection
 │   │   ├── faq.py                 # FAQ store CRUD + pgvector semantic search
 │   │   ├── call_manager.py        # Redis session: create, read, update, delete

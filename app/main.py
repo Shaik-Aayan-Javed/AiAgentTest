@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import health
+from app.routers import health, tts
 
 
 @asynccontextmanager
@@ -49,3 +49,4 @@ app.mount(
 )
 
 app.include_router(health.router, prefix="/api")
+app.include_router(tts.router, prefix="/api")
