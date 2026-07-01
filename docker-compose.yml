@@ -1,0 +1,72 @@
+version: "3.9"
+
+# ── VoiceAI local development stack ──────────────────────────────────────────
+#
+# Start everything:   docker compose up -d
+# Stop everything:    docker compose down
+# View logs:          docker compose logs -f coqui-tts
+#
+# Coqui XTTS-v2 downloads the model on first boot (~1.8GB). This takes
+# 2–5 minutes on first run. Subsequent starts are instant.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Text-to-Speech: Coqui XTTS-v2 (voice cloning) ──────────────────────────
+  coqui-tts:
+    image: daswer123/xtts-api-server:latest
+    container_name: voiceai-coqui
+    ports:
+      - "8020:8020"
+    volumes:
+      - ./assets:/app/speakers:ro       # voice samples mounted read-only
+      - coqui_models:/root/.local/share/tts  # model cache persisted across restarts
+    environment:
+      - COQUI_TOS_AGREED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s               # allow time for model download on first boot
+
+  # ── Redis: session state, response cache, job queue ─────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: voiceai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── PostgreSQL: calls, transcripts, FAQs, knowledge base ────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: voiceai-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: voiceai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d voiceai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  coqui_models:    # persists the ~1.8GB XTTS-v2 model between restarts
+  redis_data:
+  postgres_data:
