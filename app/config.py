@@ -21,6 +21,11 @@ class Settings(BaseSettings):
 
     # TTS — Coqui XTTS-v2 (Docker)
     coqui_tts_url: str = "http://localhost:8020"
+    tts_provider: str = "coqui"                # "coqui" | "gtts"
+    tts_default_voice: str = "voice_sample"    # speaker name = voice sample filename (no ext)
+    tts_language: str = "en"
+    tts_fallback_enabled: bool = True          # fall back to gTTS if Coqui fails
+    audio_cleanup_max_age_seconds: int = 3600  # prune generated audio older than this
 
     # Data
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai"
