@@ -23,7 +23,8 @@ python-multipart>=0.0.9   # file uploads for POST /api/stt/transcribe
 #     pip install -r requirements-stt.txt
 
 # ── Added in Phase 4 (LLM brain) ────────────────────────
-anthropic>=0.40.0    # Claude API (the reasoning brain)
+anthropic>=0.40.0    # Claude API (the reasoning brain, default)
+google-genai>=1.0.0  # Gemini (optional alternative brain; only used if LLM_PROVIDER=gemini)
 
 # ── Added in Phase 5 (Training / tiered response) ───────
 

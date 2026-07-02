@@ -17,13 +17,15 @@ class Settings(BaseSettings):
 
     # AI services
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""
     deepgram_api_key: str = ""
 
-    # LLM — the reasoning brain (Claude)
-    llm_provider: str = "claude"
-    llm_model: str = "claude-haiku-4-5"        # fast/cheap tier for voice; swap to claude-sonnet-5 for complex
-    llm_max_tokens: int = 400                  # short spoken replies (1–3 sentences)
-    llm_temperature: float = 0.7
+    # LLM — the reasoning brain
+    llm_provider: str = "claude"               # "claude" | "gemini"
+    llm_model: str = "claude-haiku-4-5"        # Claude model; fast/cheap tier for voice
+    llm_max_tokens: int = 400                  # short spoken replies (1–3 sentences) — shared by all providers
+    llm_temperature: float = 0.7               # shared by all providers
+    gemini_model: str = "gemini-2.5-flash"     # Gemini model (used when llm_provider=gemini)
     llm_system_prompt: str = (
         "You are a professional voice assistant answering phone calls on behalf of "
         "the owner. Your words are read aloud by a text-to-speech system, so reply in "

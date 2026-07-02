@@ -100,7 +100,7 @@ async def _check_llm() -> ProviderStatus:
         return ProviderStatus(
             status="down",
             provider=provider.name,
-            message="ANTHROPIC_API_KEY not set in .env",
+            message=f"{provider.name} API key not set in .env",
         )
     except Exception as exc:
         return ProviderStatus(status="down", provider=provider.name, message=str(exc))

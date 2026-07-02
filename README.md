@@ -177,6 +177,11 @@ Uses **Claude Haiku 4.5** (fast, low-cost) by default — swap to `claude-sonnet
 via `LLM_MODEL` in `.env` for harder queries. The default persona (in `config.py`)
 is tuned for speech: plain text, one to three short sentences, no markdown.
 
+**Swap the brain to Gemini** (optional) — set `LLM_PROVIDER=gemini`, add
+`GEMINI_API_KEY` to `.env`, and `pip install google-genai`. Everything else is
+unchanged (same interface). Get a key at aistudio.google.com; confirm
+`GEMINI_MODEL` names a model your key can access.
+
 ---
 
 ## Tests
