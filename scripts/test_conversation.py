@@ -133,4 +133,9 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # input() runs inside the asyncio loop, so Ctrl+C surfaces here (as a
+    # cancelled task) rather than at the input() call — catch it for a clean exit.
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nGoodbye.")
