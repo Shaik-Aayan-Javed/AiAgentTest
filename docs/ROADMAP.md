@@ -50,13 +50,17 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design.
 
 ---
 
-## Phase 6 — Frontend shell
-- [ ] React + Vite, dark premium theme
-- [ ] Sidebar, Header, routing, API client
+## ▶ Phase 6 — Frontend shell + Live voice
+- [x] React + Vite, dark premium theme (Tailwind)
+- [x] Sidebar, Header (live health status), routing, API client
+- [x] `POST /api/converse` — one-call voice turn (STT → LLM → TTS)
+- [x] **Live panel** — push-to-talk mic → hear the reply (MediaRecorder + auto-play)
+- [x] Dashboard panel — provider status cards + quick text ask
 
-## Phase 7 — TTS Lab + STT Lab panels
-- [ ] browser record / generate / play / save
-- [ ] live mic, latency + provider readouts
+## Phase 7 — TTS Lab + STT Lab + Voice Studio panels
+- [ ] TTS Lab: text → generate → waveform + play + save
+- [ ] STT Lab: upload / record → transcript + confidence
+- [ ] Voice Studio: record voice sample, test the cloned voice
 
 ## Phase 8 — Voice Studio
 - [ ] in-browser voice-sample recording

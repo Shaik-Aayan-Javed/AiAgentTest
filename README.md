@@ -5,7 +5,7 @@ and escalates to you when needed. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE
 for the full design.
 
 > **Status:** In development.
-> Phase 1 (foundation) ✅ · Phase 2 (TTS) ✅ · Phase 3 (STT + echo) ✅ · Phase 4 (brain) ✅ · tiered response next.
+> Phases 1–4 (STT · brain · TTS) ✅ · Web dashboard with live push-to-talk ✅ · tiered response next.
 
 ---
 
@@ -194,6 +194,32 @@ blank to disable). The reply's `provider` field tells you which brain answered.
 
 The default persona (in `config.py`) is tuned for speech: plain text, one to three
 short sentences, no markdown.
+
+---
+
+## Web dashboard (push-to-talk voice)
+
+A React dashboard with a **Live** panel: tap the mic, speak, and hear the AI
+answer back — all in the browser, no file opening (`mic → STT → LLM → TTS → play`).
+
+Needs **Node.js 20+** (`node --version`). Run it alongside the API:
+
+```powershell
+# terminal 1 — the API
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+# terminal 2 — the dashboard
+cd frontend
+npm install        # first time only
+npm run dev
+```
+
+Open **http://localhost:5173**. The header shows live STT/LLM/TTS status; the
+**Live** panel is the push-to-talk voice loop. Vite proxies `/api` to the backend,
+so no CORS setup is needed.
+
+> The mic needs a secure context — `localhost` counts, so it works in dev. The
+> browser will ask for microphone permission the first time.
 
 ---
 
