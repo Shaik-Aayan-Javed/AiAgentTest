@@ -88,3 +88,64 @@ def test_conversation_accumulates_turns():
     roles = [m.role for m in conversation.messages]
     assert roles == ["user", "assistant", "user"]
     assert conversation.messages[0].content == "hi"
+
+
+# ── Fallback chain (Claude → Gemini) ──────────────────────────────────────────
+
+from app.services.llm.fallback import FallbackLLMProvider  # noqa: E402
+
+
+class ConfigurableFake(LLMProvider):
+    def __init__(self, name: str, healthy: bool = True, raises: bool = False) -> None:
+        self.name = name
+        self._healthy = healthy
+        self._raises = raises
+        self.called = False
+
+    async def complete(self, system_prompt: str, messages: list[Message]) -> LLMResponse:
+        self.called = True
+        if self._raises:
+            raise RuntimeError("primary is down")
+        return LLMResponse(f"from {self.name}", 1, 1, f"{self.name}-model", self.name)
+
+    async def health_check(self) -> bool:
+        return self._healthy
+
+
+@pytest.mark.asyncio
+async def test_fallback_uses_primary_when_healthy():
+    primary = ConfigurableFake("Claude", healthy=True)
+    fallback = ConfigurableFake("Gemini", healthy=True)
+    chain = FallbackLLMProvider(primary, fallback)
+    reply = await chain.complete("sys", [Message("user", "hi")])
+    assert reply.provider == "Claude"
+    assert primary.called and not fallback.called
+
+
+@pytest.mark.asyncio
+async def test_fallback_skips_primary_without_key():
+    primary = ConfigurableFake("Claude", healthy=False)   # no key
+    fallback = ConfigurableFake("Gemini", healthy=True)
+    chain = FallbackLLMProvider(primary, fallback)
+    reply = await chain.complete("sys", [Message("user", "hi")])
+    assert reply.provider == "Gemini"
+    assert not primary.called and fallback.called          # primary never attempted
+
+
+@pytest.mark.asyncio
+async def test_fallback_on_primary_runtime_error():
+    primary = ConfigurableFake("Claude", healthy=True, raises=True)  # bad key / outage
+    fallback = ConfigurableFake("Gemini", healthy=True)
+    chain = FallbackLLMProvider(primary, fallback)
+    reply = await chain.complete("sys", [Message("user", "hi")])
+    assert reply.provider == "Gemini"
+    assert primary.called and fallback.called              # primary attempted, then fell back
+
+
+@pytest.mark.asyncio
+async def test_fallback_health_true_if_either_available():
+    chain = FallbackLLMProvider(
+        ConfigurableFake("Claude", healthy=False),
+        ConfigurableFake("Gemini", healthy=True),
+    )
+    assert await chain.health_check() is True

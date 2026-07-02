@@ -173,14 +173,27 @@ curl -X POST http://localhost:8000/api/chat \
   -d '{"messages": [{"role": "user", "content": "What are your hours?"}]}'
 ```
 
-Uses **Claude Haiku 4.5** (fast, low-cost) by default — swap to `claude-sonnet-5`
-via `LLM_MODEL` in `.env` for harder queries. The default persona (in `config.py`)
-is tuned for speech: plain text, one to three short sentences, no markdown.
+### The brain is a priority chain (Claude → Gemini)
 
-**Swap the brain to Gemini** (optional) — set `LLM_PROVIDER=gemini`, add
-`GEMINI_API_KEY` to `.env`, and `pip install google-genai`. Everything else is
-unchanged (same interface). Get a key at aistudio.google.com; confirm
-`GEMINI_MODEL` names a model your key can access.
+By default the assistant tries **Claude** first and falls back to **Gemini** if
+Claude's key is missing or the call fails. Set keys for whichever you have:
+
+| Keys in `.env` | Who answers |
+|---|---|
+| Both | Claude (Gemini on failure) |
+| Only `GEMINI_API_KEY` | Gemini (Claude skipped — no key) |
+| Only `ANTHROPIC_API_KEY` | Claude |
+
+Configure via `LLM_PROVIDER` (primary) and `LLM_FALLBACK_PROVIDER` (fallback;
+blank to disable). The reply's `provider` field tells you which brain answered.
+
+- **Claude** — `claude-haiku-4-5` by default (fast/cheap); `claude-sonnet-5` for
+  harder queries via `LLM_MODEL`. Needs `anthropic`.
+- **Gemini** — `gemini-2.5-flash` by default via `GEMINI_MODEL`. Needs
+  `google-genai`; get a key at aistudio.google.com.
+
+The default persona (in `config.py`) is tuned for speech: plain text, one to three
+short sentences, no markdown.
 
 ---
 

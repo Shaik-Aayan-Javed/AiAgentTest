@@ -20,12 +20,13 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     deepgram_api_key: str = ""
 
-    # LLM — the reasoning brain
-    llm_provider: str = "claude"               # "claude" | "gemini"
+    # LLM — the reasoning brain (priority chain: primary, then fallback)
+    llm_provider: str = "claude"               # primary brain: "claude" | "gemini"
+    llm_fallback_provider: str = "gemini"      # used if primary key missing or the call fails; "" to disable
     llm_model: str = "claude-haiku-4-5"        # Claude model; fast/cheap tier for voice
     llm_max_tokens: int = 400                  # short spoken replies (1–3 sentences) — shared by all providers
     llm_temperature: float = 0.7               # shared by all providers
-    gemini_model: str = "gemini-2.5-flash"     # Gemini model (used when llm_provider=gemini)
+    gemini_model: str = "gemini-2.5-flash"     # Gemini model
     llm_system_prompt: str = (
         "You are a professional voice assistant answering phone calls on behalf of "
         "the owner. Your words are read aloud by a text-to-speech system, so reply in "
