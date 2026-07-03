@@ -244,7 +244,7 @@ Unit tests cover the text-preprocessing pipeline and the TTS service orchestrati
 app/
   config.py            # all settings from .env (one source of truth)
   main.py              # FastAPI app
-  routers/             # HTTP layer (health, tts)
+  routers/             # HTTP layer (health, tts, stt, chat, converse, voice)
   services/tts/        # TTS: interface, providers, factory, orchestration
   utils/               # text preprocessing, audio, file lifecycle
 scripts/               # CLI test tools

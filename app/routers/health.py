@@ -25,42 +25,39 @@ class HealthResponse(BaseModel):
     llm: ProviderStatus
 
 
-async def _ping_coqui() -> ProviderStatus:
+async def _check_tts() -> ProviderStatus:
+    """Health of the configured TTS.
+
+    Reflects whether TTS can actually serve a request — so when Coqui is down but
+    the gTTS fallback is enabled, this reports `degraded` (fallback is serving),
+    not `down`. If gTTS is the configured provider, it's always available.
+    """
+    if settings.tts_provider.lower() == "gtts":
+        return ProviderStatus(status="healthy", provider="Google TTS")
+
+    # Coqui is primary — ping the container.
     start = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{settings.coqui_tts_url}/docs")
         latency = int((time.monotonic() - start) * 1000)
         if resp.status_code == 200:
-            return ProviderStatus(
-                status="healthy",
-                provider="Coqui XTTS-v2",
-                latency_ms=latency,
-            )
+            return ProviderStatus(status="healthy", provider="Coqui XTTS-v2", latency_ms=latency)
+    except httpx.HTTPError:
+        pass  # unreachable — handled below
+
+    # Coqui unreachable. Degraded (not down) if gTTS can still serve.
+    if settings.tts_fallback_enabled:
         return ProviderStatus(
             status="degraded",
-            provider="Coqui XTTS-v2",
-            latency_ms=latency,
-            message=f"HTTP {resp.status_code}",
+            provider="Coqui XTTS-v2 → gTTS",
+            message="Coqui unavailable — gTTS fallback active (run: docker compose up -d for the cloned voice)",
         )
-    except httpx.TimeoutException:
-        return ProviderStatus(
-            status="down",
-            provider="Coqui XTTS-v2",
-            message="Connection timed out — is Docker running?",
-        )
-    except httpx.ConnectError:
-        return ProviderStatus(
-            status="down",
-            provider="Coqui XTTS-v2",
-            message="Connection refused — run: docker compose up -d",
-        )
-    except Exception as exc:
-        return ProviderStatus(
-            status="down",
-            provider="Coqui XTTS-v2",
-            message=str(exc),
-        )
+    return ProviderStatus(
+        status="down",
+        provider="Coqui XTTS-v2",
+        message="Connection refused — run: docker compose up -d",
+    )
 
 
 async def _check_stt() -> ProviderStatus:
@@ -117,7 +114,7 @@ def _overall_status(*providers: ProviderStatus) -> str:
 
 @router.get("/health", response_model=HealthResponse, summary="Provider health check")
 async def health_check() -> HealthResponse:
-    tts, stt, llm = await asyncio.gather(_ping_coqui(), _check_stt(), _check_llm())
+    tts, stt, llm = await asyncio.gather(_check_tts(), _check_stt(), _check_llm())
     return HealthResponse(
         status=_overall_status(tts, stt, llm),
         environment=settings.environment,

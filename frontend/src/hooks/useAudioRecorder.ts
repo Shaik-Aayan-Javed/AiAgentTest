@@ -31,9 +31,15 @@ export function useAudioRecorder() {
   }, []);
 
   const stop = useCallback((): Promise<Blob> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const rec = recorderRef.current;
-      if (!rec) return resolve(new Blob());
+      // Guard: nothing recording, or already stopped → resolve with what we have
+      // rather than throwing InvalidStateError or hanging forever.
+      if (!rec || rec.state === "inactive") {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+        return resolve(new Blob(chunksRef.current, { type: "audio/webm" }));
+      }
       rec.onstop = () => {
         const blob = new Blob(chunksRef.current, {
           type: rec.mimeType || "audio/webm",
@@ -42,7 +48,13 @@ export function useAudioRecorder() {
         setRecording(false);
         resolve(blob);
       };
-      rec.stop();
+      try {
+        rec.stop();
+      } catch (e) {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+        reject(e);
+      }
     });
   }, []);
 

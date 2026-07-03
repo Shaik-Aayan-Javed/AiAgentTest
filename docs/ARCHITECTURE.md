@@ -471,24 +471,28 @@ The following are the ONLY things that change. Everything else is identical.
 
 ### 8.3 Python Packages
 
+Actually installed today (see `requirements.txt` / `requirements-stt.txt` for the
+source of truth). Twilio, SQLAlchemy, Redis, ARQ, sentence-transformers, pgvector,
+etc. arrive with their respective later phases (call handling, tiered response).
+
 ```
+# requirements.txt (core)
 fastapi              # Web framework
-uvicorn              # ASGI server
-twilio               # Twilio SDK
-deepgram-sdk         # Deepgram STT
-anthropic            # Claude API
-sqlalchemy           # ORM (async)
-asyncpg              # PostgreSQL async driver
-alembic              # Database migrations
-redis                # Redis client
-arq                  # Async job queue
-sentry-sdk           # Error tracking
-httpx                # Async HTTP client
-python-dotenv        # Environment variable loading
-websockets           # WebSocket client (Twilio Media Streams)
-pydantic             # Data validation
-sentence-transformers # Local embedding model (Tier 2)
-pgvector             # pgvector Python client
+uvicorn[standard]    # ASGI server
+pydantic-settings    # Settings from .env
+python-dotenv        # .env loading
+httpx                # Async HTTP client (STT/TTS/LLM providers call over HTTP)
+python-multipart     # File uploads (STT / converse / voice endpoints)
+sentry-sdk[fastapi]  # Error tracking
+gtts                 # TTS fallback
+anthropic            # Claude (default brain)
+google-genai         # Gemini (optional brain)
+pytest, pytest-asyncio, pytest-mock   # tests
+
+# requirements-stt.txt (opt-in — self-hosted Whisper)
+faster-whisper       # Whisper STT engine (torch/ctranslate2)
+# Deepgram STT needs no SDK — called via httpx REST.
+# Coqui XTTS-v2 runs in Docker — called via httpx REST.
 ```
 
 ### 8.4 MCPs Required
@@ -682,12 +686,12 @@ OWNER_PHONE_NUMBER=+1XXXXXXXXXX        # Your real personal mobile (private)
 TAKEOVER_PHONE_NUMBER=+1XXXXXXXXXX     # Separate Twilio number for manual override
 
 # ─── AI Services ──────────────────────────────────────
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx  # Claude Haiku 4.5
-DEEPGRAM_API_KEY=xxxxxxxxxxxxxxxx      # Real-time STT
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx  # Claude (default brain)
+GEMINI_API_KEY=xxxxxxxxxxxxxxxx        # Gemini (optional brain / fallback)
+DEEPGRAM_API_KEY=xxxxxxxxxxxxxxxx      # STT (optional — Whisper is the default)
 
-# ─── TTS ──────────────────────────────────────────────
-KOKORO_TTS_URL=http://localhost:8880   # Local Docker container (dev)
-                                        # http://kokoro:8880 (Docker Compose)
+# ─── TTS (Coqui XTTS-v2 via Docker) ───────────────────
+COQUI_TTS_URL=http://localhost:8020    # Local Docker container (port 8020)
 
 # ─── Data ─────────────────────────────────────────────
 DATABASE_URL=postgresql+asyncpg://user:pass@host/dbname   # Supabase

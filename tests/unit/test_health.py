@@ -20,40 +20,62 @@ def _down(provider: str, msg: str = "down") -> ProviderStatus:
     return ProviderStatus(status="down", provider=provider, message=msg)
 
 
-@patch("app.routers.health._ping_coqui", new_callable=AsyncMock)
-@patch("app.routers.health._ping_deepgram", new_callable=AsyncMock)
-def test_health_all_healthy(mock_stt, mock_tts, client):
+def _degraded(provider: str, msg: str = "degraded") -> ProviderStatus:
+    return ProviderStatus(status="degraded", provider=provider, message=msg)
+
+
+# All three provider checks are mocked so the endpoint needs no Docker/keys/network.
+@patch("app.routers.health._check_tts", new_callable=AsyncMock)
+@patch("app.routers.health._check_stt", new_callable=AsyncMock)
+@patch("app.routers.health._check_llm", new_callable=AsyncMock)
+def test_health_all_healthy(mock_llm, mock_stt, mock_tts, client):
     mock_tts.return_value = _healthy("Coqui XTTS-v2")
-    mock_stt.return_value = _healthy("Deepgram")
+    mock_stt.return_value = _healthy("Whisper (faster-whisper)")
+    mock_llm.return_value = _healthy("Claude")
     resp = client.get("/api/health")
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "healthy"
     assert data["tts"]["status"] == "healthy"
     assert data["stt"]["status"] == "healthy"
+    assert data["llm"]["status"] == "healthy"
 
 
-@patch("app.routers.health._ping_coqui", new_callable=AsyncMock)
-@patch("app.routers.health._ping_deepgram", new_callable=AsyncMock)
-def test_health_one_provider_down(mock_stt, mock_tts, client):
-    mock_tts.return_value = _down("Coqui XTTS-v2", "Connection refused")
-    mock_stt.return_value = _healthy("Deepgram")
+@patch("app.routers.health._check_tts", new_callable=AsyncMock)
+@patch("app.routers.health._check_stt", new_callable=AsyncMock)
+@patch("app.routers.health._check_llm", new_callable=AsyncMock)
+def test_health_one_provider_down(mock_llm, mock_stt, mock_tts, client):
+    mock_tts.return_value = _healthy("Coqui XTTS-v2")
+    mock_stt.return_value = _healthy("Whisper (faster-whisper)")
+    mock_llm.return_value = _down("Claude", "ANTHROPIC_API_KEY not set")
     resp = client.get("/api/health")
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "down"
-    assert data["tts"]["status"] == "down"
+    assert resp.json()["status"] == "down"
 
 
-@patch("app.routers.health._ping_coqui", new_callable=AsyncMock)
-@patch("app.routers.health._ping_deepgram", new_callable=AsyncMock)
-def test_health_response_shape(mock_stt, mock_tts, client):
+@patch("app.routers.health._check_tts", new_callable=AsyncMock)
+@patch("app.routers.health._check_stt", new_callable=AsyncMock)
+@patch("app.routers.health._check_llm", new_callable=AsyncMock)
+def test_health_degraded_when_no_down(mock_llm, mock_stt, mock_tts, client):
+    # degraded + healthy (no "down") → overall degraded, not down
+    mock_tts.return_value = _degraded("Coqui XTTS-v2 → gTTS")
+    mock_stt.return_value = _healthy("Whisper (faster-whisper)")
+    mock_llm.return_value = _healthy("Gemini")
+    resp = client.get("/api/health")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "degraded"
+
+
+@patch("app.routers.health._check_tts", new_callable=AsyncMock)
+@patch("app.routers.health._check_stt", new_callable=AsyncMock)
+@patch("app.routers.health._check_llm", new_callable=AsyncMock)
+def test_health_response_shape(mock_llm, mock_stt, mock_tts, client):
     mock_tts.return_value = _healthy("Coqui XTTS-v2")
-    mock_stt.return_value = _healthy("Deepgram")
+    mock_stt.return_value = _healthy("Whisper (faster-whisper)")
+    mock_llm.return_value = _healthy("Claude")
     data = client.get("/api/health").json()
-    assert "status" in data
-    assert "environment" in data
-    assert "tts" in data
-    assert "stt" in data
-    assert "provider" in data["tts"]
-    assert "latency_ms" in data["tts"]
+    for key in ("status", "environment", "tts", "stt", "llm"):
+        assert key in data
+    for section in ("tts", "stt", "llm"):
+        assert "provider" in data[section]
+        assert "status" in data[section]

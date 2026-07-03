@@ -35,9 +35,9 @@ export function LivePanel() {
     }
 
     if (status === "recording") {
-      setStatus("thinking");
-      const blob = await stop();
       try {
+        const blob = await stop();
+        setStatus("thinking");
         const res = await converse(blob, messages);
         setMessages((m) => [
           ...m,

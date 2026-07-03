@@ -3,6 +3,7 @@ import { Header } from "./components/layout/Header";
 import { PanelKey, Sidebar } from "./components/layout/Sidebar";
 import { DashboardPanel } from "./panels/DashboardPanel";
 import { LivePanel } from "./panels/LivePanel";
+import { VoiceStudioPanel } from "./panels/VoiceStudioPanel";
 
 const LABELS: Record<PanelKey, string> = {
   dashboard: "Dashboard",
@@ -23,7 +24,8 @@ export default function App() {
         <main className="flex-1 overflow-auto p-6">
           {panel === "live" && <LivePanel />}
           {panel === "dashboard" && <DashboardPanel />}
-          {panel !== "live" && panel !== "dashboard" && <ComingSoon name={LABELS[panel]} />}
+          {panel === "voice" && <VoiceStudioPanel />}
+          {(panel === "tts" || panel === "stt") && <ComingSoon name={LABELS[panel]} />}
         </main>
       </div>
     </div>

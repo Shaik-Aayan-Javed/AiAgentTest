@@ -23,6 +23,12 @@ app/static/audio/*.wav
 assets/voice_sample.wav
 assets/voice_sample.mp3
 
+# Stray audio recordings in the repo root (test clips) — never commit
+/*.mp3
+/*.wav
+/*.m4a
+/*.ogg
+
 # Node / Frontend build
 node_modules/
 frontend/dist/

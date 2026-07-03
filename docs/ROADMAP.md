@@ -50,7 +50,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design.
 
 ---
 
-## ▶ Phase 6 — Frontend shell + Live voice
+## ✅ Phase 6 — Frontend shell + Live voice
 - [x] React + Vite, dark premium theme (Tailwind)
 - [x] Sidebar, Header (live health status), routing, API client
 - [x] `POST /api/converse` — one-call voice turn (STT → LLM → TTS)
@@ -62,9 +62,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design.
 - [ ] STT Lab: upload / record → transcript + confidence
 - [ ] Voice Studio: record voice sample, test the cloned voice
 
-## Phase 8 — Voice Studio
-- [ ] in-browser voice-sample recording
-- [ ] sample management, cloned-voice test
+## ✅ Phase 8 — Voice Studio
+- [x] `POST/GET/DELETE /api/voice/sample` + serve saved sample
+- [x] in-browser voice-sample recording (client-side WAV encode)
+- [x] sample management (record / play / delete) + cloned-voice test
+- [ ] (setup) Coqui running + `TTS_PROVIDER=coqui` to hear the cloned voice
 
 ## Phase 9 — Training Center (UI)
 - [ ] FAQ manager, knowledge base, persona editor, response tester

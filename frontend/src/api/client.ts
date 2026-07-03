@@ -66,6 +66,59 @@ export interface ChatResult {
   output_tokens: number;
 }
 
+// ── Voice sample (cloning reference) ──────────────────────────────────────────
+
+export interface SampleStatus {
+  exists: boolean;
+  duration_ms?: number;
+  bytes?: number;
+}
+
+export async function getVoiceSample(): Promise<SampleStatus> {
+  const r = await fetch(`${BASE}/voice/sample`);
+  if (!r.ok) throw new Error(await detail(r));
+  return r.json();
+}
+
+export async function saveVoiceSample(wav: Blob): Promise<SampleStatus> {
+  const fd = new FormData();
+  fd.append("audio", wav, "voice_sample.wav");
+  const r = await fetch(`${BASE}/voice/sample`, { method: "POST", body: fd });
+  if (!r.ok) throw new Error(await detail(r));
+  return r.json();
+}
+
+export async function deleteVoiceSample(): Promise<void> {
+  await fetch(`${BASE}/voice/sample`, { method: "DELETE" });
+}
+
+// URL of the saved sample (for playback). Cache-busted so a re-record refreshes.
+export function voiceSampleUrl(): string {
+  return `${BASE}/voice/sample/audio?t=${Date.now()}`;
+}
+
+// ── TTS (used to test the cloned voice) ───────────────────────────────────────
+
+export interface SynthResult {
+  audio_url: string;
+  provider: string;
+  latency_ms: number;
+  duration_ms: number;
+  character_count: number;
+  cached: boolean;
+  processed_text: string;
+}
+
+export async function synthesize(text: string): Promise<SynthResult> {
+  const r = await fetch(`${BASE}/tts/synthesize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!r.ok) throw new Error(await detail(r));
+  return r.json();
+}
+
 export async function chat(messages: Msg[]): Promise<ChatResult> {
   const r = await fetch(`${BASE}/chat`, {
     method: "POST",

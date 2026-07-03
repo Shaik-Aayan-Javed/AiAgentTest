@@ -39,7 +39,7 @@ class TTSService:
     def __init__(self, provider: TTSProvider, file_manager: _FileStore) -> None:
         self._provider = provider
         self._files = file_manager
-        # cache key -> (filename, format, duration_ms, provider)
+        # cache key -> (filename, duration_ms, provider)
         self._cache: dict[str, tuple[str, int, str]] = {}
 
     async def synthesize(self, text: str, voice: str | None = None) -> TTSResult:
